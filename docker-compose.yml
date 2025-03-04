@@ -1,27 +1,55 @@
 #File: docker-compose.yml
 version: "3.8"
 services:
-  db:
+  db-prod:
     image: postgres:13
-    container_name: openroots-db
+    container_name: openroots-db-prod
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${PROD_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${PROD_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${PROD_POSTGRES_DB}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
-  api:
+      - pgdata-prod:/var/lib/postgresql/data
+
+  db-par:
+    image: postgres:13
+    container_name: openroots-db-par
+    environment:
+      - POSTGRES_USER=${PAR_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${PAR_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${PAR_POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-par:/var/lib/postgresql/data
+
+  api-prod:
     build: .
-    container_name: openroots-api
+    container_name: openroots-api-prod
     depends_on:
-      - db
+      - db-prod
     ports:
       - "8080:8080"
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/${POSTGRES_DB}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-prod:5432/${PROD_POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${PROD_POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${PROD_POSTGRES_PASSWORD}
+
+  api-par:
+    build: .
+    container_name: openroots-api-par
+    depends_on:
+      - db-par
+    ports:
+      - "8081:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=par
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${PAR_POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${PAR_POSTGRES_PASSWORD}
 volumes:
-  pgdata:
+  pgdata-prod:
+  pgdata-par:
