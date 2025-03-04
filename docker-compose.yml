@@ -50,6 +50,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
       - SPRING_DATASOURCE_USERNAME=${PAR_POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${PAR_POSTGRES_PASSWORD}
+
 volumes:
   pgdata-prod:
   pgdata-par:
