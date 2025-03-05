@@ -1,3 +1,124 @@
+
+----
+
+openroots-api/
+├── Dockerfile
+├── docker-compose.yml
+├── build.gradle.kts
+├── settings.gradle.kts
+└── src
+    └── main
+        ├── kotlin
+        │   └── com
+        │       └── openroots
+        │           └── openroots_api
+        │               └── OpenrootsApiApplication.kt
+        └── resources
+            ├── application.properties
+            ├── application-devlocal.properties
+            ├── application-par.properties
+            └── application-prod.properties
+
+
+----
+
+Aim of the codebase:
+- I have a large, specialised data from the local council in the UK
+- I want to run a LLM on top of this codebase, so that the user can use a mobile app to communicate with the LLM, and query the specialised dataset i have uploaded to a vector database
+- To do this, I have a mobile application written in kotlin multiplatform
+- I also have a backend server written in kotlin spring boot, which is attached to a postgres database
+- The codebase I am giving you here is the backend api written in kotlin spring boot
+
+Notes:
+- The kotlin spring boot api is hosted on amazon web services lightsail
+- It uses docker
+- It uses kotlin spring boot, with a postgres database
+- The aws instance runs on Ubuntu 22.04 LTS
+
+-----
+
+//File: src/main/kotlin/com/openroots/openroots_api/OpenrootsApiApplication.kt
+package com.openroots.openroots_api
+
+import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.runApplication
+
+@SpringBootApplication
+class OpenrootsApiApplication
+
+fun main(args: Array<String>) {
+	runApplication<OpenrootsApiApplication>(*args)
+}
+
+#File: src/main/resources/application.properties
+spring.application.name=openroots-api
+
+#File: src/main/resources/application-devlocal.properties
+spring.datasource.url=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
+spring.datasource.username=${PAR_POSTGRES_USER}
+spring.datasource.password=${PAR_POSTGRES_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+#File: src/main/resources/application-par.properties
+spring.datasource.url=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
+spring.datasource.username=${PAR_POSTGRES_USER}
+spring.datasource.password=${PAR_POSTGRES_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+#File: src/main/resources/application-prod.properties
+spring.datasource.url=jdbc:postgresql://db-prod:5432/${PROD_POSTGRES_DB}
+spring.datasource.username=${PROD_POSTGRES_USER}
+spring.datasource.password=${PROD_POSTGRES_PASSWORD}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+plugins {
+	kotlin("jvm") version "1.9.25"
+	kotlin("plugin.spring") version "1.9.25"
+	id("org.springframework.boot") version "3.4.3"
+	id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "com.openroots"
+version = "0.0.1-SNAPSHOT"
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	runtimeOnly("org.postgresql:postgresql")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+kotlin {
+	compilerOptions {
+		freeCompilerArgs.addAll("-Xjsr305=strict")
+	}
+}
+
+allOpen {
+	annotation("jakarta.persistence.Entity")
+	annotation("jakarta.persistence.MappedSuperclass")
+	annotation("jakarta.persistence.Embeddable")
+}
+
+tasks.withType<Test> {
+	useJUnitPlatform()
+}
+
 #File: docker-compose.yml
 version: "3.8"
 services:
@@ -50,11 +171,10 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
       - SPRING_DATASOURCE_USERNAME=${PAR_POSTGRES_USER}
       - SPRING_DATASOURCE_PASSWORD=${PAR_POSTGRES_PASSWORD}
+
 volumes:
   pgdata-prod:
   pgdata-par:
-
-----
 
 #File: Dockerfile
 FROM openjdk:17-jdk-alpine
@@ -63,155 +183,16 @@ COPY build/libs/openroots-api.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app.jar"]
 
------
+--------
 
-plugins {
-	kotlin("jvm") version "1.9.25"
-	kotlin("plugin.spring") version "1.9.25"
-	id("org.springframework.boot") version "3.4.3"
-	id("io.spring.dependency-management") version "1.1.7"
-	kotlin("plugin.jpa") version "1.9.25"
-}
+This is all the code i have running on my amazon lightsail instance right now 
 
-group = "com.openroots"
-version = "0.0.1-SNAPSHOT"
+now i want to setup my postgres databases. show me how to do that. 
 
-java {
-	toolchain {
-		languageVersion = JavaLanguageVersion.of(17)
-	}
-}
+I think i need to do this using a jar file on  my amazon lightsail instance becuase it doesn't have much resources? 
 
-repositories {
-	mavenCentral()
-}
+my lightsail instance is the $5 a month one so it doesnt' have much resources 
 
-dependencies {
-	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
-	runtimeOnly("org.postgresql:postgresql")
-	testImplementation("org.springframework.boot:spring-boot-starter-test")
-	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
+do you agree it needs to be a jar file on the server? 
 
-kotlin {
-	compilerOptions {
-		freeCompilerArgs.addAll("-Xjsr305=strict")
-	}
-}
-
-allOpen {
-	annotation("jakarta.persistence.Entity")
-	annotation("jakarta.persistence.MappedSuperclass")
-	annotation("jakarta.persistence.Embeddable")
-}
-
-tasks.withType<Test> {
-	useJUnitPlatform()
-}
-
-----
-
-#File: src/main/resources/application.properties
-spring.application.name=openroots-api
-
-----
-
-#File: src/main/resources/application-devlocal.properties
-spring.datasource.url=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
-spring.datasource.username=${PAR_POSTGRES_USER}
-spring.datasource.password=${PAR_POSTGRES_PASSWORD}
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-----
-
-#File: src/main/resources/application-par.properties
-spring.datasource.url=jdbc:postgresql://db-par:5432/${PAR_POSTGRES_DB}
-spring.datasource.username=${PAR_POSTGRES_USER}
-spring.datasource.password=${PAR_POSTGRES_PASSWORD}
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
------
-
-#File: src/main/resources/application-prod.properties
-spring.datasource.url=jdbc:postgresql://db-prod:5432/${PROD_POSTGRES_DB}
-spring.datasource.username=${PROD_POSTGRES_USER}
-spring.datasource.password=${PROD_POSTGRES_PASSWORD}
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.hibernate.ddl-auto=validate
-spring.jpa.show-sql=false
-
-----
-
-openroots-api/
-├── Dockerfile
-├── docker-compose.yml
-├── build.gradle.kts
-├── settings.gradle.kts
-└── src
-    └── main
-        ├── kotlin
-        │   └── com
-        │       └── openroots
-        │           └── openroots_api
-        │               └── OpenrootsApiApplication.kt
-        └── resources
-            ├── application.properties
-            ├── application-devlocal.properties
-            ├── application-par.properties
-            └── application-prod.properties
-
-
-----
-
-Aim of the codebase:
-- I have a large, specialised data from the local council in the UK
-- I want to run a LLM on top of this codebase, so that the user can use a mobile app to communicate with the LLM, and query the specialised dataset i have uploaded to a vector database
-- To do this, I have a mobile application written in kotlin multiplatform
-- I also have a backend server written in kotlin spring boot, which is attached to a postgres database
-- The codebase I am giving you here is the backend api written in kotlin spring boot
-
-Notes:
-- The kotlin spring boot api is hosted on amazon web services lightsail
-- It uses docker
-- It uses kotlin spring boot, with a postgres database
-- The aws instance runs on Ubuntu 22.04 LTS
-
------
-
-//File: src/main/kotlin/com/openroots/openroots_api/HelloController.kt
-package com.openroots.openroots_api
-
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RestController
-
-@RestController
-class HelloController {
-    @GetMapping("/")
-    fun hello(): String = "Hello from Openroots API!"
-}
-
-
-//File: src/main/kotlin/com/openroots/openroots_api/OpenrootsApiApplication.kt
-package com.openroots.openroots_api
-
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-
-@SpringBootApplication
-class OpenrootsApiApplication
-
-fun main(args: Array<String>) {
-	runApplication<OpenrootsApiApplication>(*args)
-}
-
------------
-
-first, give me a package structure diagram of the codebase
+Can i adequately set up my postgres databases using docker from the jar file? 
