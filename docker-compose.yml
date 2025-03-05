@@ -26,7 +26,7 @@ services:
       - pgdata-par:/var/lib/postgresql/data
 
   api-prod:
-    build: .
+    image: roberlia/openroots-api:latest
     container_name: openroots-api-prod
     depends_on:
       - db-prod

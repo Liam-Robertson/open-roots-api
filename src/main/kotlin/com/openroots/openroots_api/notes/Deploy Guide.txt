@@ -1,0 +1,16 @@
+On your lightsail server you need these two files:
+- docker-compose.yml - for setting up docker
+- .env - for storing passwords
+
+
+- Build your gradle project
+./gradlew build
+- Start your docker desktop locally in windows
+- Build  your docker image:
+docker build -t openroots-api:latest .
+- Test your docker image locally
+docker run -p 8080:8080 openroots-api:latest
+- Tag it with your docker name (so it can be uploaded to docker hub):
+docker tag openroots-api:latest roberlia/openroots-api:latest
+- Push the image to docker hub:
+docker push roberlia/openroots-api:latest
